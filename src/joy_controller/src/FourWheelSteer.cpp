@@ -85,7 +85,7 @@ void FourWheelSteer::vehicle(double vx, double TurnRadius, bool TurnLeft) {
         parallel(vx, 0.0);
         return;
     }
-    const double HalfDistWheel = DistWheelCenter / ROOT2;
+    static const double HalfDistWheel = DistWheelCenter / ROOT2;
     double Speed = vx * VEL_TO_RAD;
 
     double inside_angle = atan2(TurnRadius - HalfDistWheel, HalfDistWheel);
@@ -106,4 +106,29 @@ void FourWheelSteer::vehicle(double vx, double TurnRadius, bool TurnLeft) {
     }
     // 旋回半径が小さすぎない限り、±π/2を超えることはないが、念の為補正する。
     for (int i = 0; i < 4; i++) AngleLimitter(Angle[i], AngVel[i]);
+}
+
+void FourWheelSteer::calcOdom(double angVel[4], double angle[4]) {
+    ros::Time now_time = ros::Time::now();
+    double dt = now_time.toSec() - prev_time.toSec();
+    prev_time = now_time;
+
+    double vel[4];
+    for(int i = 0; i < 4; i++) {
+        // 速度がマイナスの場合、角度を180度回転させる。
+        if (angVel[i] < 0.0) {
+            angVel[i] = abs(angVel[i]);
+            if (angle[i] < 0.0) angle[i] += M_PI;
+            else angle[i] -= M_PI;
+        }
+
+        vel[i] = angVel[i] / VEL_TO_RAD;
+    }
+
+    x += (vel[0]*cos(theta+angle[0]) + vel[1]*cos(theta+angle[1]) + vel[2]*cos(theta+angle[2]) + vel[3]*cos(theta+angle[3])) / 4.0 * dt;
+    y += (vel[0]*sin(theta+angle[0]) + vel[1]*sin(theta+angle[1]) + vel[2]*sin(theta+angle[2]) + vel[3]*sin(theta+angle[3])) / 4.0 * dt;
+    theta += ROOT2*(vel[0]*(-cos(angle[0])+sin(angle[0])) + 
+                    vel[1]*(-cos(angle[1])-sin(angle[1])) + 
+                    vel[2]*( cos(angle[2])-sin(angle[2])) + 
+                    vel[3]*( cos(angle[3])+sin(angle[3]))) / 8.0 / DistWheelCenter * dt;
 }
