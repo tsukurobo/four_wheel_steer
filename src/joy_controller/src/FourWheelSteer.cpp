@@ -87,7 +87,6 @@ void FourWheelSteer::vehicle(double vx, double w) {
 
     double TurnRadius = abs(vx / w);
     TurnRadiusLimitter(TurnRadius);
-    ROS_INFO_STREAM("TurnRadius: " << TurnRadius);
 
     static const double HalfDistLRWheel = DistLRWheel / 2.0, HalfDistFBWheel = DistFBWheel / 2.0;
     double angVel = vx / DistPerEnc;
