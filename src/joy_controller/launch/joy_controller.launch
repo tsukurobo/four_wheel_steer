@@ -40,7 +40,7 @@
             <param name="Pkp3" value="0.35"/>
             <param name="Pki3" value="0.1"/>
             <param name="Pkd3" value="0.0"/>
-            <param name="freq" value="100"/>
+            <param name="freq" value="200"/>
         </node>
     </group>
 

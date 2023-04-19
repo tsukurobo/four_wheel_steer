@@ -7,7 +7,7 @@
 #define ROOT2 1.4142135623730950488016887242097 // √2
 #define M_PI_6 0.52359877559829887307710723054658 // π/6
 
-#define FLT_ZERO 1e-5
+#define FLT_ZERO 1e-3
 
 #define ALLOWABLE_ANGVEL_ERROR 1.3
 
@@ -23,7 +23,7 @@ private:
     // 座標
     double x = 0.0, y = 0.0, theta = 0.0;
     // 前回の座標更新時刻
-    ros::Time prev_time = ros::Time::now();
+    ros::Time prev_time; // = ros::Time::now();
 
     // 最大移動速度(m/s)、最大角速度(rad/s)、ただし正の値
     double v_max, w_max;
@@ -43,13 +43,13 @@ private:
 public:
     // コンストラクタ
     // DistPerEnc: 駆動輪エンコーダ1回転辺りの進む距離(mm)、DistFBWheel: 前後ホイールの距離(mm)、DistLRWheel: 左右ホイールの距離(mm)
-    FourWheelSteer(double DistPerEnc, double DistFBWheel, double DistLRWheel, double v_max = 1.0, double w_max = M_PI, double TurnRadius_min = 0.8, double TurnRadius_max = 1e6);
+    FourWheelSteer(double DistPerEnc, double DistFBWheel, double DistLRWheel, double v_max = 1.0, double w_max = M_PI, double TurnRadius_min = 0.8, double TurnRadius_max = 100);
     // 平行移動をするための目標ステア角と目標RPSを計算
     void parallel(double vx, double vy);
     // 回転するための目標ステア角と目標RPSを計算
     void rotate(double w);
     // 自動車と同じように走行するための目標ステア角と目標RPSを計算
-    void vehicle(double vx, double TurnRadius, bool TurnLeft);
+    void vehicle(double vx, double w);
     // 停止
     void stop() {
         AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;

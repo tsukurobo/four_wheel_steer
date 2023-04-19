@@ -76,15 +76,19 @@ void FourWheelSteer::rotate(double w) {
     AngVel[2] = AngVel[3] =  angVel;    // 右前、右後の角速度
 }
 
-void FourWheelSteer::vehicle(double vx, double TurnRadius, bool TurnLeft) {
-    TurnRadius = abs(TurnRadius);
-    bool straight = TurnRadiusLimitter(TurnRadius);
+void FourWheelSteer::vehicle(double vx, double w) {
     vxLimitter(vx);
+    wLimitter(w);
 
-    if (straight) {
+    if (abs(w) < FLT_ZERO) {
         parallel(vx, 0.0);
         return;
     }
+
+    double TurnRadius = abs(vx / w);
+    TurnRadiusLimitter(TurnRadius);
+    ROS_INFO_STREAM("TurnRadius: " << TurnRadius);
+
     static const double HalfDistLRWheel = DistLRWheel / 2.0, HalfDistFBWheel = DistFBWheel / 2.0;
     double angVel = vx / DistPerEnc;
 
@@ -92,7 +96,7 @@ void FourWheelSteer::vehicle(double vx, double TurnRadius, bool TurnLeft) {
     double outside_angle  = atan2(HalfDistFBWheel, TurnRadius + HalfDistLRWheel);
     double inside_angVel  = hypot(HalfDistFBWheel, TurnRadius - HalfDistLRWheel) / TurnRadius * angVel;
     double outside_angVel = hypot(HalfDistFBWheel, TurnRadius + HalfDistLRWheel) / TurnRadius * angVel;
-    if (TurnLeft) {
+    if (w < 0) {
         Angle[0] = inside_angle; Angle[1] = -inside_angle;
         Angle[2] = -outside_angle; Angle[3] = outside_angle;
         AngVel[0] = AngVel[1] = inside_angVel;
@@ -105,7 +109,7 @@ void FourWheelSteer::vehicle(double vx, double TurnRadius, bool TurnLeft) {
         AngVel[2] = AngVel[3] = inside_angVel;
     }
     // 旋回半径が小さすぎない限り、±π/2を超えることはないが、念の為補正する。
-    for (int i = 0; i < 4; i++) AngleLimitter(Angle[i], AngVel[i]);
+    // for (int i = 0; i < 4; i++) AngleLimitter(Angle[i], AngVel[i]);
 }
 
 bool FourWheelSteer::anomalyDetect(double angVel[4]) {
@@ -130,6 +134,7 @@ bool FourWheelSteer::anomalyDetect(double angVel[4]) {
 
 // 縦横比が異なる場合に対応できていない
 void FourWheelSteer::calcOdom(double angVel[4], double angle[4]) {
+    static ros::Time prev_time = ros::Time::now();
     ros::Time now_time = ros::Time::now();
     double dt = now_time.toSec() - prev_time.toSec();
     prev_time = now_time;

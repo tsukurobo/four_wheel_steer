@@ -7,6 +7,9 @@
 
 using namespace std;
 
+// ros::init(argc, argv, "controller");
+// ros::NodeHandle nh;
+
 msgs::FourWheelSteerRad target;
 msgs::FourWheelSteerPIDGain pid_gain;
 
@@ -27,11 +30,10 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         vy =  joy_msg.axes[0] * v_max;
         vx =  joy_msg.axes[1] * v_max;
         w  = -joy_msg.axes[2] * w_max;
-        TurnRadius = -(TurnRadius_max - TurnRadius_min) * abs(joy_msg.axes[2]) + TurnRadius_max;
         ROS_INFO_STREAM(mode);
 
         if (mode == "VEHICLE") {
-            steer.vehicle(vx, TurnRadius, w < 0);
+            steer.vehicle(vx, w);
         }
         else if (mode == "PARALLEL") {
             steer.parallel(vx, vy);

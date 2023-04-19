@@ -8,12 +8,10 @@
 #include "msgs/FourWheelSteerPIDGain.h"
 #include <std_msgs/Int16MultiArray.h>
 
-#define TWO_PI 6.283185307179586476925286766559
-
 ros::NodeHandle nh;
 
-const uint8_t driveMotorNum[] = {0, 1, 2, 3}, steerMotorNum[] = {4, 5, 6, 7};
-const uint8_t incEncNum[] = {0, 1, 2, 3}, absEncNum[] = {0, 1, 2, 3}; 
+const uint8_t driveMotorNum[] = {4, 2, 0, 6}, steerMotorNum[] = {5, 3, 1, 7};
+const uint8_t incEncNum[] = {2, 1, 0, 3}, absEncNum[] = {2, 1, 0, 3}; 
 
 float angle[4], angVel[4];
 float Vkp[4], Vki[4], Vkd[4], Pkp[4], Pki[4], Pkd[4];
@@ -89,6 +87,7 @@ void loop()
   if (Stop) {
     for(int i = 0; i < 4; i++) {
       DC_motor::put(driveMotorNum[i], 0);
+      DC_motor::put(steerMotorNum[i], 0);
     }
   }
   else {
@@ -106,8 +105,8 @@ void loop()
   for(int i = 0; i < 4; i++) {
     enc_msg.data[i]   = Inc_enc::get(incEncNum[i]);
     enc_msg.data[i+4] = Abs_enc::get(absEncNum[i]);
-    rad_msg.angVel[i] = Cubic_controller::encoderToAngle(Inc_enc::get_diff(incEncNum[i]), INC_CPR);
-    rad_msg.angle[i]  = Cubic_controller::encoderToAngle(Abs_enc::get(absEncNum[i]), AMT22_CPR);
+    rad_msg.angVel[i] = encoderToAngle(Inc_enc::get_diff(incEncNum[i]), INC_CPR);
+    rad_msg.angle[i]  = encoderToAngle(Abs_enc::get(absEncNum[i]), AMT22_CPR);
   }
   //enc_pub.publish(&enc_msg);
   rad_pub.publish(&rad_msg);
