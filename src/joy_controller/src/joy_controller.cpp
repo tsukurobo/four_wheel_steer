@@ -60,6 +60,17 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
     }
 }
 
+void radCb(const msgs::FourWheelSteerRad &rad_msg) {
+    double angVel[4];
+    for (int i = 0; i < 4; i++) {
+        angVel[i] = rad_msg.angVel[i];
+    }
+    if (steer.anomalyDetect(angVel)) {
+        ROS_INFO_STREAM("ANOMALY DETECTED");
+        target.stop = true;
+    }
+}
+
 void setTarget() {
     for (int i = 0; i < 4; i++) {
         target.angle[i] = steer.getAngle(i);
@@ -121,6 +132,7 @@ int main(int argc, char **argv) {
     target.stop = true;
 
     ros::Subscriber joy_sub = nh.subscribe("joy", 1, joyCb);
+    ros::Subscriber rad_sub = nh.subscribe("rad", 1, radCb);
     ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad>("target", 1);
     ros::Publisher gain_pub = nh.advertise<msgs::FourWheelSteerPIDGain>("gain", 1);
 

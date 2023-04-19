@@ -104,10 +104,10 @@ void loop()
   }
 
   for(int i = 0; i < 4; i++) {
-    enc_msg.data[i] = Inc_enc::get(incEncNum[i]);
+    enc_msg.data[i]   = Inc_enc::get(incEncNum[i]);
     enc_msg.data[i+4] = Abs_enc::get(absEncNum[i]);
-    rad_msg.angle[i] = Cubic_controller::encoderToAngle(0, INC_CPR); // encoderToAngle(Inc_enc::get_diff(incEncNum[i]), INC_CPR);
-    rad_msg.angVel[i] = Cubic_controller::encoderToAngle(0, AMT22_CPR); // encoderToAngle(Abs_enc::get(absEncNum[i]), AMT22_CPR);
+    rad_msg.angVel[i] = Cubic_controller::encoderToAngle(Inc_enc::get_diff(incEncNum[i]), INC_CPR);
+    rad_msg.angle[i]  = Cubic_controller::encoderToAngle(Abs_enc::get(absEncNum[i]), AMT22_CPR);
   }
   //enc_pub.publish(&enc_msg);
   rad_pub.publish(&rad_msg);
