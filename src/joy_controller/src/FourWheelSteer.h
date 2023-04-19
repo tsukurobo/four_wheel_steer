@@ -9,12 +9,12 @@
 
 #define FLT_ZERO 1e-5
 
+#define ALLOWABLE_ANGVEL_ERROR 1.3
+
 class FourWheelSteer {
 private:
-    // 中心とホイールの距離(m)
-    const double DistWheelCenter;
-    // 各ホイールの速度(m/s)を角速度(rad/s)に変換するための係数
-    const double VEL_TO_RAD;
+    // 中心とホイールの距離(m)、前後ホイールの距離(m)、左右ホイールの距離(m)、駆動輪エンコーダ1回転辺りの進む距離(m)
+    const double DistWheelCenter, DistFBWheel, DistLRWheel, DistPerEnc;
     // 左前、左後、右後、右前ホイールの目標ステア角(-M_PI_2 ~ M_PI_2)
     double Angle[4] = {0.0};
     // 左前、左後、右後、右前ホイールの目標角速度(rad/s)
@@ -42,8 +42,8 @@ private:
     void AngleLimitter(double &Angle, double &AngVel);
 public:
     // コンストラクタ
-    // WheelRadius: ホイールの半径(mm), DistWheelCenter: ホイール中心と車体中心の距離(mm)
-    FourWheelSteer(double WheelRadius, double DistWheelCenter, double v_max = 1.0, double w_max = M_PI, double TurnRadius_min = 0.8, double TurnRadius_max = 1e6);
+    // DistPerEnc: 駆動輪エンコーダ1回転辺りの進む距離(mm)、DistFBWheel: 前後ホイールの距離(mm)、DistLRWheel: 左右ホイールの距離(mm)
+    FourWheelSteer(double DistPerEnc, double DistFBWheel, double DistLRWheel, double v_max = 1.0, double w_max = M_PI, double TurnRadius_min = 0.8, double TurnRadius_max = 1e6);
     // 平行移動をするための目標ステア角と目標RPSを計算
     void parallel(double vx, double vy);
     // 回転するための目標ステア角と目標RPSを計算
@@ -54,6 +54,8 @@ public:
     void stop() {
         AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
     }
+    // 角速度の差が大きすぎないかを判定し、異常なら停止しtrueを返す。
+    bool anomalyDetect(double angVel[4]);
     // オドメトリを計算
     void calcOdom(double angVel[4], double angle[4]);
 
