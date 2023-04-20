@@ -1,30 +1,21 @@
 #include <ros/ros.h>
 #include <math.h>
-#include <msgs/FourWheelSteerRad8.h>
-#include <msgs/FourWheelSteerRad16.h>
+#include <msgs/FourWheelSteerRad.h>
 #include <msgs/FourWheelSteerPIDGain.h>
 #include <sensor_msgs/Joy.h>
 #include "FourWheelSteer.h"
 
-#define DistPerEnc 34.286 // 駆動輪エンコーダ1回転辺りの進む距離(mm)
-#define V_MAX 5.0 // 理論上の最高速度(m/s)
-// #define ANGVEL_MAX (V_MAX*1000.0) / DistPerEnc // 理論上の最高角速度(rad/s)
-#define ANGVEL_MAX 145.83211806568278597678352680394 // 理論上の最高角速度(rad/s)
-
 using namespace std;
 
-// ros::init(argc, argv, "controller");
-// ros::NodeHandle nh;
-
-msgs::FourWheelSteerRad8 target;
+msgs::FourWheelSteerRad target;
 msgs::FourWheelSteerPIDGain pid_gain;
 
-string mode = "VEHICLE";
+string mode = "XVEHICLE";
 
 int freq = 1000;
 
 FourWheelSteer steer(34.286, 31.0, 35.0);
-double vx = 0.0, vy = 0.0, w = 0.0, TurnRadius = 1e6;
+double vx = 0.0, vy = 0.0, wx = 0.0, wy = 0.0, TurnRadius = 1e6;
 double v_max = 1.0, w_max = M_PI, TurnRadius_min = 0.8, TurnRadius_max = 1e6;
 
 double Vkp[4], Vki[4], Vkd[4];
@@ -35,17 +26,21 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         target.stop = false;
         vy =  joy_msg.axes[0] * v_max;
         vx =  joy_msg.axes[1] * v_max;
-        w  = -joy_msg.axes[2] * w_max;
+        wx  = joy_msg.axes[2] * w_max;
+        wy  = -joy_msg.axes[3] * w_max;
         ROS_INFO_STREAM(mode);
 
-        if (mode == "VEHICLE") {
-            steer.vehicle(vx, w);
+        if (mode == "XVEHICLE") {
+            steer.xVehicle(vx, wx);
+        }
+        else if (mode == "YVEHICLE") {
+            steer.yVehicle(vy, wy);
         }
         else if (mode == "PARALLEL") {
             steer.parallel(vx, vy);
         }
         else if (mode == "ROTATE") {
-            steer.rotate(w);
+            steer.rotate(wx);
         }
     }
     else {
@@ -55,25 +50,26 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
     }
 
     if (joy_msg.axes[5] == 1) {
-        mode = "VEHICLE";
-        ROS_INFO_STREAM("MODE CHANGE: VEHCILE");
+        mode = "XVEHICLE";
+        ROS_INFO_STREAM("MODE CHANGE: XVEHCILE");
     }
     else if (joy_msg.axes[5] == -1) {
-        mode = "PARALLEL";
-        ROS_INFO_STREAM("MODE CHANGE: PARALLEL");
-    }
-    else if (joy_msg.axes[4] == 1 || joy_msg.axes[4] == -1) {
         mode = "ROTATE";
         ROS_INFO_STREAM("MODE CHANGE: ROTATE");
     }
+    else if (joy_msg.axes[4] == 1 || joy_msg.axes[4] == -1) {
+        mode = "YVEHICLE";
+        ROS_INFO_STREAM("MODE CHANGE: YVEHCILE");
+    }
 }
 
-void radCb(const msgs::FourWheelSteerRad16 &rad_msg) {
-    double angVel[4];
+void radCb(const msgs::FourWheelSteerRad &rad_msg) {
+    double angVel[4], angle[4];
     for (int i = 0; i < 4; i++) {
-        angVel[i] = rad_msg.angVel[i] / (double)INT16_MAX * ANGVEL_MAX;
+        angVel[i] = rad_msg.angVel[i];
+        angle[i]  = rad_msg.angle[i];
     }
-    if (steer.anomalyDetect(angVel)) {
+    if (steer.anomalyDetect(angVel, angle)) {
         ROS_INFO_STREAM("ANOMALY DETECTED");
         target.stop = true;
     }
@@ -81,8 +77,8 @@ void radCb(const msgs::FourWheelSteerRad16 &rad_msg) {
 
 void setTarget() {
     for (int i = 0; i < 4; i++) {
-        target.angle[i] = steer.getAngle(i) / M_PI_2 * INT8_MAX;
-        target.angVel[i] = steer.getAngVel(i) / ANGVEL_MAX * INT8_MAX;
+        target.angle[i] = steer.getAngle(i);
+        target.angVel[i] = steer.getAngVel(i);
     }
 }
 
@@ -141,7 +137,7 @@ int main(int argc, char **argv) {
 
     ros::Subscriber joy_sub = nh.subscribe("joy", 1, joyCb);
     ros::Subscriber rad_sub = nh.subscribe("rad", 1, radCb);
-    ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad8>("target", 1);
+    ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad>("target", 1);
     ros::Publisher gain_pub = nh.advertise<msgs::FourWheelSteerPIDGain>("gain", 1);
 
     sleep(5);

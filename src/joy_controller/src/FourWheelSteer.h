@@ -48,14 +48,16 @@ public:
     void parallel(double vx, double vy);
     // 回転するための目標ステア角と目標RPSを計算
     void rotate(double w);
-    // 自動車と同じように走行するための目標ステア角と目標RPSを計算
-    void vehicle(double vx, double w);
+    // x方向に自動車と同じように走行するための目標ステア角と目標RPSを計算
+    void xVehicle(double vx, double w);
+    // y方向に自動車と同じように走行するための目標ステア角と目標RPSを計算
+    void yVehicle(double vy, double w);
     // 停止
     void stop() {
         AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
     }
     // 角速度の差が大きすぎないかを判定し、異常なら停止しtrueを返す。
-    bool anomalyDetect(double angVel[4]);
+    bool anomalyDetect(double angVel[4], double angle[4]);
     // オドメトリを計算
     void calcOdom(double angVel[4], double angle[4]);
 

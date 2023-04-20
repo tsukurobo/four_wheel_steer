@@ -60,7 +60,7 @@ void FourWheelSteer::parallel(double vx, double vy) {
     }
     double angle = atan2(vy, vx);
     double angVel = v / DistPerEnc;
-    AngleLimitter(angle, angVel);
+    if (abs(vx) > abs(vy)) AngleLimitter(angle, angVel);
     Angle[0] = Angle[1] = Angle[2] = Angle[3] = angle;
     AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = angVel;
 }
@@ -76,12 +76,13 @@ void FourWheelSteer::rotate(double w) {
     AngVel[2] = AngVel[3] =  angVel;    // 右前、右後の角速度
 }
 
-void FourWheelSteer::vehicle(double vx, double w) {
+void FourWheelSteer::xVehicle(double vx, double w) {
     vxLimitter(vx);
     wLimitter(w);
 
     if (abs(w) < FLT_ZERO) {
-        parallel(vx, 0.0);
+        Angle[0] = Angle[1] = Angle[2] = Angle[3] = 0.0;
+        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = vx / DistPerEnc;
         return;
     }
 
@@ -95,7 +96,7 @@ void FourWheelSteer::vehicle(double vx, double w) {
     double outside_angle  = atan2(HalfDistFBWheel, TurnRadius + HalfDistLRWheel);
     double inside_angVel  = hypot(HalfDistFBWheel, TurnRadius - HalfDistLRWheel) / TurnRadius * angVel;
     double outside_angVel = hypot(HalfDistFBWheel, TurnRadius + HalfDistLRWheel) / TurnRadius * angVel;
-    if (w < 0) {
+    if (w > 0) {
         Angle[0] = inside_angle; Angle[1] = -inside_angle;
         Angle[2] = -outside_angle; Angle[3] = outside_angle;
         AngVel[0] = AngVel[1] = inside_angVel;
@@ -111,7 +112,43 @@ void FourWheelSteer::vehicle(double vx, double w) {
     // for (int i = 0; i < 4; i++) AngleLimitter(Angle[i], AngVel[i]);
 }
 
-bool FourWheelSteer::anomalyDetect(double angVel[4]) {
+void FourWheelSteer::yVehicle(double vy, double w) {
+    vxLimitter(vy);
+    wLimitter(w);
+
+    if (abs(w) < FLT_ZERO) {
+        Angle[0] = Angle[1] = Angle[2] = Angle[3] = M_PI_2;
+        AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = vy / DistPerEnc;
+        return;
+    }
+
+    double TurnRadius = abs(vy / w);
+    TurnRadiusLimitter(TurnRadius);
+
+    static const double HalfDistLRWheel = DistLRWheel / 2.0, HalfDistFBWheel = DistFBWheel / 2.0;
+    double angVel = vy / DistPerEnc;
+
+    double inside_angle   = atan2(HalfDistLRWheel, TurnRadius - HalfDistFBWheel);
+    double outside_angle  = atan2(HalfDistLRWheel, TurnRadius + HalfDistFBWheel);
+    double inside_angVel  = hypot(HalfDistLRWheel, TurnRadius - HalfDistFBWheel) / TurnRadius * angVel;
+    double outside_angVel = hypot(HalfDistLRWheel, TurnRadius + HalfDistFBWheel) / TurnRadius * angVel;
+    if (w > 0) {
+        Angle[1] = inside_angle; Angle[2] = -inside_angle;
+        Angle[3] = -outside_angle; Angle[0] = outside_angle;
+        AngVel[1] = AngVel[2] = inside_angVel;
+        AngVel[3] = AngVel[0] = outside_angVel;
+    }
+    else {
+        Angle[1] = -outside_angle; Angle[2] = outside_angle;
+        Angle[3] = inside_angle; Angle[0] = -inside_angle;
+        AngVel[1] = AngVel[2] = outside_angVel;
+        AngVel[3] = AngVel[0] = inside_angVel;
+    }
+    // +π/2だけ補正する。
+    for (int i = 0; i < 4; i++) Angle[i] += M_PI_2;
+}
+
+bool FourWheelSteer::anomalyDetect(double angVel[4], double angle[4]) {
     for (int i = 0; i < 4; i++) {
         for (int j = i + 1; j < 4; j++) {
             if (abs(angVel[i]) < abs(angVel[j])) {
