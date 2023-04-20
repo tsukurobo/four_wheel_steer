@@ -52,6 +52,7 @@ void FourWheelSteer::AngleLimitter(double &Angle, double &AngVel) {
     }
 }
 
+// ステアが暴走して危険！
 void FourWheelSteer::parallel(double vx, double vy) {
     double v = vLimitter(vx, vy);
     if (abs(v) < FLT_ZERO) {
@@ -60,7 +61,7 @@ void FourWheelSteer::parallel(double vx, double vy) {
     }
     double angle = atan2(vy, vx);
     double angVel = v / DistPerEnc;
-    if (abs(vx) > abs(vy)) AngleLimitter(angle, angVel);
+    AngleLimitter(angle, angVel);
     Angle[0] = Angle[1] = Angle[2] = Angle[3] = angle;
     AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = angVel;
 }
@@ -108,8 +109,6 @@ void FourWheelSteer::xVehicle(double vx, double w) {
         AngVel[0] = AngVel[1] = outside_angVel;
         AngVel[2] = AngVel[3] = inside_angVel;
     }
-    // 旋回半径が小さすぎない限り、±π/2を超えることはないが、念の為補正する。
-    // for (int i = 0; i < 4; i++) AngleLimitter(Angle[i], AngVel[i]);
 }
 
 void FourWheelSteer::yVehicle(double vy, double w) {

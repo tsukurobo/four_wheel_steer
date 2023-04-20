@@ -69,10 +69,6 @@ void radCb(const msgs::FourWheelSteerRad &rad_msg) {
         angVel[i] = rad_msg.angVel[i];
         angle[i]  = rad_msg.angle[i];
     }
-    if (steer.anomalyDetect(angVel, angle)) {
-        ROS_INFO_STREAM("ANOMALY DETECTED");
-        target.stop = true;
-    }
 }
 
 void setTarget() {
