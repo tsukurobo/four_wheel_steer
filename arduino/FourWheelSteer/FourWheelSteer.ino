@@ -4,9 +4,15 @@
 #include "Cubic.controller.h"
 
 #include <ros.h>
-#include "msgs/FourWheelSteerRad.h"
+#include "msgs/FourWheelSteerRad8.h"
+#include "msgs/FourWheelSteerRad16.h"
 #include "msgs/FourWheelSteerPIDGain.h"
 #include <std_msgs/Int16MultiArray.h>
+
+#define DistPerEnc 34.286 // 駆動輪エンコーダ1回転辺りの進む距離(mm)
+#define V_MAX 5.0 // 理論上の最高速度(m/s)
+// #define ANGVEL_MAX (V_MAX*1000.0) / DistPerEnc
+#define ANGVEL_MAX 145.83211806568278597678352680394 // 理論上の最高角速度(rad/s)
 
 ros::NodeHandle nh;
 
@@ -17,15 +23,15 @@ float angle[4], angVel[4];
 float Vkp[4], Vki[4], Vkd[4], Pkp[4], Pki[4], Pkd[4];
 const uint16_t INC_CPR = 2048;
 const double capableDuty = 0.5;
-bool Stop = false;
+bool Stop = true;
 
 std_msgs::Int16MultiArray duty_msg, enc_msg;
-msgs::FourWheelSteerRad rad_msg;
+msgs::FourWheelSteerRad16 rad_msg;
 
-void targetCb(const msgs::FourWheelSteerRad &target) {
+void targetCb(const msgs::FourWheelSteerRad8 &target) {
   for(int i = 0; i < 4; i++) {
-    angle[i] = target.angle[i];
-    angVel[i] = target.angVel[i];
+    angle[i] = target.angle[i] / (float)INT8_MAX * M_PI_2;
+    angVel[i] = target.angVel[i] / (float)INT8_MAX * ANGVEL_MAX;
     Stop = target.stop;
   }
 }
@@ -41,7 +47,7 @@ void gainCb(const msgs::FourWheelSteerPIDGain &gain) {
   }
 }
 
-ros::Subscriber<msgs::FourWheelSteerRad> target_sub("target", targetCb);
+ros::Subscriber<msgs::FourWheelSteerRad8> target_sub("target", targetCb);
 ros::Subscriber<msgs::FourWheelSteerPIDGain> gain_sub("gain", gainCb);
 ros::Publisher duty_pub("duty", &duty_msg);
 ros::Publisher enc_pub("enc", &enc_msg);
@@ -51,7 +57,8 @@ void setup()
 {
   Cubic::begin();
   
-  nh.getHardware()->setBaud(115200);
+  // nh.getHardware()->setBaud(115200);
+  nh.getHardware()->setBaud(2000000);
   nh.initNode();
 
   duty_msg.data = (int16_t*)malloc(sizeof(int16_t)*8);
@@ -78,10 +85,10 @@ void loop()
     {driveMotorNum[3], incEncNum[3], encoderType::inc, INC_CPR, capableDuty, Vkp[3], Vki[3], Vkd[3], angVel[3], false, false},
   };
   static Position_PID steerPID[] = {
-    {steerMotorNum[0], absEncNum[0], encoderType::abs, AMT22_CPR, capableDuty, Pkp[0], Pki[0], Pkd[0], angle[0], true, false},
+    {steerMotorNum[0], absEncNum[0], encoderType::abs, AMT22_CPR, capableDuty, Pkp[0], Pki[0], Pkd[0], angle[0], false, false},
     {steerMotorNum[1], absEncNum[1], encoderType::abs, AMT22_CPR, capableDuty, Pkp[1], Pki[1], Pkd[1], angle[1], true, false},
-    {steerMotorNum[2], absEncNum[2], encoderType::abs, AMT22_CPR, capableDuty, Pkp[2], Pki[2], Pkd[2], angle[2], true, false},
-    {steerMotorNum[3], absEncNum[3], encoderType::abs, AMT22_CPR, capableDuty, Pkp[3], Pki[3], Pkd[3], angle[3], true, false},
+    {steerMotorNum[2], absEncNum[2], encoderType::abs, AMT22_CPR, capableDuty, Pkp[2], Pki[2], Pkd[2], angle[2], false, false},
+    {steerMotorNum[3], absEncNum[3], encoderType::abs, AMT22_CPR, capableDuty, Pkp[3], Pki[3], Pkd[3], angle[3], false, false},
   };
 
   if (Stop) {
@@ -99,16 +106,20 @@ void loop()
       steerPID[i].setGains(Pkp[i], Pki[i], Pkd[i]);
       steerPID[i].setTarget(angle[i]);
       steerPID[i].compute();
+      // DC_motor::put(steerMotorNum[i], 200);
     }
   }
 
   for(int i = 0; i < 4; i++) {
     enc_msg.data[i]   = Inc_enc::get(incEncNum[i]);
     enc_msg.data[i+4] = Abs_enc::get(absEncNum[i]);
-    rad_msg.angVel[i] = encoderToAngle(Inc_enc::get_diff(incEncNum[i]), INC_CPR);
-    rad_msg.angle[i]  = encoderToAngle(Abs_enc::get(absEncNum[i]), AMT22_CPR);
+    duty_msg.data[i] = DC_motor::get(driveMotorNum[i]);
+    duty_msg.data[i+4] = DC_motor::get(steerMotorNum[i]);
+    rad_msg.angVel[i] = encoderToAngle(Inc_enc::get_diff(incEncNum[i]), INC_CPR) / ANGVEL_MAX * INT16_MAX;
+    rad_msg.angle[i]  = encoderToAngle(Abs_enc::get(absEncNum[i]), AMT22_CPR) / PI * INT16_MAX;
   }
-  //enc_pub.publish(&enc_msg);
+  // enc_pub.publish(&enc_msg);
+  // duty_pub.publish(&duty_msg);
   rad_pub.publish(&rad_msg);
 
   Cubic::update();

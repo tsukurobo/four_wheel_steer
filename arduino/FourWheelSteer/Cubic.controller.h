@@ -81,7 +81,7 @@ namespace Cubic_controller
      * @param offset オフセット[rad]。省略可能で、デフォルトは0.0
      * @return constexpr double angle[rad](-PI<= angle < PI)
      */
-    constexpr double encoderToAngle(const int32_t encoder, const uint16_t CPR, const double offset = 0.0)
+    constexpr double encoderToAngle(const int32_t encoder, const uint16_t CPR, const double offset = -PI)
     {
         return limitAngle(offset + encoder * (TWO_PI / (double)CPR));
     }

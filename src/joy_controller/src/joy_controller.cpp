@@ -1,16 +1,22 @@
 #include <ros/ros.h>
 #include <math.h>
-#include <msgs/FourWheelSteerRad.h>
+#include <msgs/FourWheelSteerRad8.h>
+#include <msgs/FourWheelSteerRad16.h>
 #include <msgs/FourWheelSteerPIDGain.h>
 #include <sensor_msgs/Joy.h>
 #include "FourWheelSteer.h"
+
+#define DistPerEnc 34.286 // 駆動輪エンコーダ1回転辺りの進む距離(mm)
+#define V_MAX 5.0 // 理論上の最高速度(m/s)
+// #define ANGVEL_MAX (V_MAX*1000.0) / DistPerEnc // 理論上の最高角速度(rad/s)
+#define ANGVEL_MAX 145.83211806568278597678352680394 // 理論上の最高角速度(rad/s)
 
 using namespace std;
 
 // ros::init(argc, argv, "controller");
 // ros::NodeHandle nh;
 
-msgs::FourWheelSteerRad target;
+msgs::FourWheelSteerRad8 target;
 msgs::FourWheelSteerPIDGain pid_gain;
 
 string mode = "VEHICLE";
@@ -62,10 +68,10 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
     }
 }
 
-void radCb(const msgs::FourWheelSteerRad &rad_msg) {
+void radCb(const msgs::FourWheelSteerRad16 &rad_msg) {
     double angVel[4];
     for (int i = 0; i < 4; i++) {
-        angVel[i] = rad_msg.angVel[i];
+        angVel[i] = rad_msg.angVel[i] / (double)INT16_MAX * ANGVEL_MAX;
     }
     if (steer.anomalyDetect(angVel)) {
         ROS_INFO_STREAM("ANOMALY DETECTED");
@@ -75,8 +81,8 @@ void radCb(const msgs::FourWheelSteerRad &rad_msg) {
 
 void setTarget() {
     for (int i = 0; i < 4; i++) {
-        target.angle[i] = steer.getAngle(i);
-        target.angVel[i] = steer.getAngVel(i);
+        target.angle[i] = steer.getAngle(i) / M_PI_2 * INT8_MAX;
+        target.angVel[i] = steer.getAngVel(i) / ANGVEL_MAX * INT8_MAX;
     }
 }
 
@@ -135,7 +141,7 @@ int main(int argc, char **argv) {
 
     ros::Subscriber joy_sub = nh.subscribe("joy", 1, joyCb);
     ros::Subscriber rad_sub = nh.subscribe("rad", 1, radCb);
-    ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad>("target", 1);
+    ros::Publisher target_pub = nh.advertise<msgs::FourWheelSteerRad8>("target", 1);
     ros::Publisher gain_pub = nh.advertise<msgs::FourWheelSteerPIDGain>("gain", 1);
 
     sleep(5);
