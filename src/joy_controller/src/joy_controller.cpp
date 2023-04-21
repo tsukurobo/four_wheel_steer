@@ -5,6 +5,15 @@
 #include <sensor_msgs/Joy.h>
 #include "FourWheelSteer.h"
 
+#define ENABLE_BUTTON 5
+#define VY_AXE 0
+#define VX_AXE 1
+#define WX_AXE 2
+#define WY_AXE 3
+#define XVEHICLE_AXE 5
+#define YVEHICLE_AXE 4
+#define ROTATE_AXE 5
+
 using namespace std;
 
 msgs::FourWheelSteerRad target;
@@ -22,12 +31,12 @@ double Vkp[4], Vki[4], Vkd[4];
 double Pkp[4], Pki[4], Pkd[4];
 
 void joyCb(const sensor_msgs::Joy &joy_msg) {
-    if (joy_msg.buttons[5]) {
+    if (joy_msg.buttons[ENABLE_BUTTON]) {
         target.stop = false;
-        vy =  joy_msg.axes[0] * v_max;
-        vx =  joy_msg.axes[1] * v_max;
-        wx  = joy_msg.axes[2] * w_max;
-        wy  = -joy_msg.axes[3] * w_max;
+        vy =  joy_msg.axes[VY_AXE] * v_max;
+        vx =  joy_msg.axes[VX_AXE] * v_max;
+        wx  = joy_msg.axes[WX_AXE] * w_max;
+        wy  = -joy_msg.axes[WY_AXE] * w_max;
         ROS_INFO_STREAM(mode);
 
         if (mode == "XVEHICLE") {
@@ -49,15 +58,15 @@ void joyCb(const sensor_msgs::Joy &joy_msg) {
         ROS_INFO_STREAM("STOP");
     }
 
-    if (joy_msg.axes[5] == 1) {
+    if (joy_msg.axes[XVEHICLE_AXE] == 1) {
         mode = "XVEHICLE";
         ROS_INFO_STREAM("MODE CHANGE: XVEHCILE");
     }
-    else if (joy_msg.axes[5] == -1) {
+    else if (joy_msg.axes[ROTATE_AXE] == -1) {
         mode = "ROTATE";
         ROS_INFO_STREAM("MODE CHANGE: ROTATE");
     }
-    else if (joy_msg.axes[4] == 1 || joy_msg.axes[4] == -1) {
+    else if (joy_msg.axes[YVEHICLE_AXE] == 1 || joy_msg.axes[YVEHICLE_AXE] == -1) {
         mode = "YVEHICLE";
         ROS_INFO_STREAM("MODE CHANGE: YVEHCILE");
     }
