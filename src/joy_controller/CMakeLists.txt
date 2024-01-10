@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -124,7 +125,8 @@ include_directories(
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/joy_controller.cpp
 # )
-add_executable(joy_controller src/joy_controller.cpp)
+add_executable(JoyTwistPublisher src/JoyTwistPublisher.cpp)
+add_executable(Sample src/Sample.cpp)
 add_library(FourWheelSteer src/FourWheelSteer.cpp)
 
 ## Add cmake target dependencies of the library
@@ -151,7 +153,11 @@ add_library(FourWheelSteer src/FourWheelSteer.cpp)
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-target_link_libraries(joy_controller
+target_link_libraries(JoyTwistPublisher
+  ${catkin_LIBRARIES}
+  # FourWheelSteer
+)
+target_link_libraries(Sample
   ${catkin_LIBRARIES}
   FourWheelSteer
 )

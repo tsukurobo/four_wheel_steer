@@ -61,11 +61,10 @@ void FourWheelSteer::AngleLimitter(double &Angle, double &AngVel)
     }
 }
 
-// ステアが暴走して危険！
-void FourWheelSteer::parallel(geometry_msgs::Twist &cmdVel)
+void FourWheelSteer::parallel(geometry_msgs::Twist &cmdVel) // ステアが暴走して危険！
 {
     double magnitude = vLimitter(cmdVel);
-    if (abs(v) < FLT_ZERO)
+    if (abs(magnitude) < FLT_ZERO)
     {
         int a = 0;
         stop();
