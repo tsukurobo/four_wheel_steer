@@ -4,15 +4,14 @@
 #include <math.h>
 #include <ros/ros.h>
 #define ROOT3_2 0.86602540378443864676372317075294 // √3/2
-#define ROOT2 1.4142135623730950488016887242097    // √2
-#define M_PI_6 0.52359877559829887307710723054658  // π/6
+#define ROOT2 1.4142135623730950488016887242097 // √2
+#define M_PI_6 0.52359877559829887307710723054658 // π/6
 
 #define FLT_ZERO 1e-3
 
 #define ALLOWABLE_ANGVEL_ERROR 1.3
 
-class FourWheelSteer
-{
+class FourWheelSteer {
 private:
     // 中心とホイールの距離(m)、前後ホイールの距離(m)、左右ホイールの距離(m)、駆動輪エンコーダ1回転辺りの進む距離(m)
     const double DistWheelCenter, DistFBWheel, DistLRWheel, DistPerEnc;
@@ -30,7 +29,7 @@ private:
     double v_max, w_max;
     // 最小旋回半径(m)、最大旋回半径(m)
     double TurnRadius_min, TurnRadius_max;
-
+    
     // 移動速度を補正
     double vLimitter(double &vx, double &vy);
     // x軸方向の移動速度を補正
@@ -41,7 +40,6 @@ private:
     bool TurnRadiusLimitter(double &TurnRadius);
     // -M_PI_2<(目標ステア角)<M_PI_2になるように目標ステア角と目標角速度を補正
     void AngleLimitter(double &Angle, double &AngVel);
-
 public:
     // コンストラクタ
     // DistPerEnc: 駆動輪エンコーダ1回転辺りの進む距離(mm)、DistFBWheel: 前後ホイールの距離(mm)、DistLRWheel: 左右ホイールの距離(mm)
@@ -55,8 +53,7 @@ public:
     // y方向に自動車と同じように走行するための目標ステア角と目標RPSを計算
     void yVehicle(double vy, double w);
     // 停止
-    void stop()
-    {
+    void stop() {
         AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = 0.0;
     }
     // 角速度の差が大きすぎないかを判定し、異常なら停止しtrueを返す。
@@ -65,43 +62,36 @@ public:
     void calcOdom(double angVel[4], double angle[4]);
 
     // 目標ステア角を取得
-    double getAngle(int i)
-    {
+    double getAngle(int i) {
         if (i >= 0 && i < 4)
             return Angle[i];
         return 0.0;
     }
     // 目標角速度を取得
-    double getAngVel(int i)
-    {
+    double getAngVel(int i) {
         if (i >= 0 && i < 4)
             return AngVel[i];
         return 0.0;
     }
-    void getOdom(double &x, double &y, double &theta)
-    {
+    void getOdom(double &x, double &y, double &theta) {
         x = this->x;
         y = this->y;
         theta = this->theta;
     }
     // 最大移動速度を設定
-    void setVMax(double v_max)
-    {
+    void setVMax(double v_max) {
         this->v_max = abs(v_max);
     }
     // 最大角速度を設定
-    void setWMax(double w_max)
-    {
+    void setWMax(double w_max) {
         this->w_max = abs(w_max);
     }
     // 最小旋回半径を設定
-    void setTurnRadiusMin(double TurnRadius_min)
-    {
+    void setTurnRadiusMin(double TurnRadius_min) {
         this->TurnRadius_min = abs(TurnRadius_min);
     }
     // 最大旋回半径を設定
-    void setTurnRadiusMax(double TurnRadius_max)
-    {
+    void setTurnRadiusMax(double TurnRadius_max) {
         this->TurnRadius_max = abs(TurnRadius_max);
     }
 };
