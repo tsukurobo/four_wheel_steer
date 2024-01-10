@@ -5,17 +5,16 @@ FourWheelSteer::FourWheelSteer(double DistPerEnc, double DistFBWheel, double Dis
 {
 }
 
-double FourWheelSteer::vLimitter(double &vx, double &vy)
+double FourWheelSteer::vLimitter(geometry_msgs::Twist &cmdV)
 {
-    // v_maxを越えていた場合、比を保ったまま補正する。
-    double v = hypot(vx, vy);
-    if (v > v_max)
+    double magnitude = std::hypot(cmdV.linear.x, cmdV.linear.y);
+    if (magnitude > v_max)
     {
-        vx = vx / v * v_max;
-        vy = vy / v * v_max;
+        cmdV.linear.x = cmdV.linear.x / magnitude * v_max;
+        cmdV.linear.y = cmdV.linear.y / magnitude * v_max;
         return v_max;
     }
-    return v;
+    return magnitude;
 }
 
 void FourWheelSteer::vxLimitter(double &vx)
@@ -63,16 +62,17 @@ void FourWheelSteer::AngleLimitter(double &Angle, double &AngVel)
 }
 
 // ステアが暴走して危険！
-void FourWheelSteer::parallel(double vx, double vy)
+void FourWheelSteer::parallel(geometry_msgs::Twist &cmdVel)
 {
-    double v = vLimitter(vx, vy);
+    double magnitude = vLimitter(cmdVel);
     if (abs(v) < FLT_ZERO)
     {
+        int a = 0;
         stop();
         return;
     }
-    double angle = atan2(vy, vx);
-    double angVel = v / DistPerEnc;
+    double angle = atan2(cmdVel.linear.y, cmdVel.linear.x);
+    double angVel = magnitude / DistPerEnc;
     AngleLimitter(angle, angVel);
     Angle[0] = Angle[1] = Angle[2] = Angle[3] = angle;
     AngVel[0] = AngVel[1] = AngVel[2] = AngVel[3] = angVel;

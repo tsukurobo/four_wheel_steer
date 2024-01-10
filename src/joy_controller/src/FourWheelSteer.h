@@ -2,7 +2,10 @@
 #define FourWheelSteer_h
 
 #include <math.h>
+#include <cmath>
 #include <ros/ros.h>
+#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/
 #define ROOT3_2 0.86602540378443864676372317075294 // √3/2
 #define ROOT2 1.4142135623730950488016887242097    // √2
 #define M_PI_6 0.52359877559829887307710723054658  // π/6
@@ -31,25 +34,50 @@ private:
     // 最小旋回半径(m)、最大旋回半径(m)
     double TurnRadius_min, TurnRadius_max;
 
-    // 移動速度を補正
-    double vLimitter(double &vx, double &vy);
+    /** 指令速度の大きさが最大値を超えていた場合、向きはそのままで大きさを最大値に補正
+     * @param cmdV: 指令速度(m/s)
+     * @return 指令速度の大きさ(m/s)
+     */
+    double vLimitter(geometry_msgs::Twist &cmdV);
+
     // x軸方向の移動速度を補正
     void vxLimitter(double &vx);
     // 角速度を補正
     void wLimitter(double &w);
     // 旋回半径を補正
     bool TurnRadiusLimitter(double &TurnRadius);
-    // -M_PI_2<(目標ステア角)<M_PI_2になるように目標ステア角と目標角速度を補正
+    /**
+     * -M_PI_2<(目標ステア角)<M_PI_2になるように目標ステア角と目標角速度を補正
+     * @param Angle: 目標ステア角(-M_PI_2 ~ M_PI_2)
+     * @param AngVel: 目標角速度(rad/s)
+     */
     void AngleLimitter(double &Angle, double &AngVel);
 
 public:
-    // コンストラクタ
-    // DistPerEnc: 駆動輪エンコーダ1回転辺りの進む距離(mm)、DistFBWheel: 前後ホイールの距離(mm)、DistLRWheel: 左右ホイールの距離(mm)
+    /**
+     * コンストラクタ
+     * @param DistPerEnc: 駆動輪エンコーダ1回転辺りの進む距離(mm)
+     * @param DistFBWheel: 前後ホイールの距離(mm)
+     * @param DistLRWheel: 左右ホイールの距離(mm)
+     * @param v_max: 最大移動速度(m/s)、デフォルト1.0
+     * @param w_max: 最大角速度(rad/s)、デフォルトM_PI
+     * @param TurnRadius_min: 最小旋回半径(m)、デフォルト0.8
+     * @param TurnRadius_max: 最大旋回半径(m)、デフォルト100
+     */
     FourWheelSteer(double DistPerEnc, double DistFBWheel, double DistLRWheel, double v_max = 1.0, double w_max = M_PI, double TurnRadius_min = 0.8, double TurnRadius_max = 100);
-    // 平行移動をするための目標ステア角と目標RPSを計算
-    void parallel(double vx, double vy);
-    // 回転するための目標ステア角と目標RPSを計算
+
+    /**
+     * 平行移動をするための目標ステア角と目標RPSを計算
+     * @param cmdVel: 指令速度(m/s)
+     */
+    void parallel(geometry_msgs::Twist &cmdVel);
+
+    /**
+     * 回転するための目標ステア角と目標RPSを計算
+     * @param w: 回転角速度(rad/s)
+     */
     void rotate(double w);
+
     // x方向に自動車と同じように走行するための目標ステア角と目標RPSを計算
     void xVehicle(double vx, double w);
     // y方向に自動車と同じように走行するための目標ステア角と目標RPSを計算
